@@ -15,7 +15,7 @@ app = Flask(__name__)
 CORS(app) 
 
 #  Get the OpenAI API key and frontend password from environment variables
-openai.api_key = os.getenv('key')
+openai.api_key = os.getenv('api')
 FRONTEND_PASSWORD = os.getenv('FRONTEND_PASSWORD')
 guest_key = os.getenv('guest_key')
 
