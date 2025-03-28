@@ -48,7 +48,19 @@ def chat():
         #  Call OpenAI's ChatCompletion API with GPT-4o model
         response = openai.ChatCompletion.create(
             model="gpt-4o",  # GPT-4o (Omni model)
-            messages=[{"role": "user", "content": user_message}]
+           messages=[
+    {
+        "role": "system",
+        "content": (
+            "You are a supportive, emotionally intelligent mental health assistant. "
+            "Be empathetic, validating, and caring. Help the user feel heard and valued. "
+            "If they are sad, comfort them. If they are anxious, offer calm advice. "
+            "You may gently suggest breathing exercises or journaling if it helps."
+        )
+    },
+    {"role": "user", "content": user_message}
+]
+
         )
 
         #  Extract AI's reply from the response

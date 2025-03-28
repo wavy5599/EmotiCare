@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mental Health Chatbot</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #1e1e2f;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    .message {
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      border-radius: 10px;
+      max-width: 60%;
+    }
+    .bot {
+      background: #3b82f6;
+      align-self: flex-start;
+    }
+    .user {
+      background: #10b981;
+      align-self: flex-end;
+    }
+    .input-area {
+      display: flex;
+      padding: 1rem;
+      background: #111827;
+    }
+    input {
+      flex: 1;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 5px 0 0 5px;
+      background: #374151;
+      color: white;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: 0 5px 5px 0;
+      cursor: pointer;
+    }
+    .tools {
+      display: flex;
+      gap: 10px;
+      margin: 0.5rem 0;
+    }
+    .tools button {
+      background: #6b21a8;
+    }
+    .mood-selector {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      flex: 1;
+    }
+    .moods button {
+      font-size: 2rem;
+      margin: 0.5rem;
+      background: transparent;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const app = document.getElementById('app');
+
+    let messages = [];
+    let mood = null;
+
+    function renderMoodSelector() {
+      app.innerHTML = `
+        <div class="mood-selector">
+          <h2>How are you feeling today?</h2>
+          <div class="moods">
+            ${["😊", "😐", "😢", "😠"].map(m => `<button onclick="selectMood('${m}')">${m}</button>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function selectMood(selectedMood) {
+      mood = selectedMood;
+      messages.push({ sender: 'bot', text: `Hey there 👋 I see you're feeling ${mood}. I'm here for you.` });
+      renderChat();
+    }
+
+    function renderChat() {
+      app.innerHTML = `
+        <div class="chat-container" id="chat-container">
+          ${messages.map(msg => `<div class="message ${msg.sender}">${msg.text}</div>`).join('')}
+        </div>
+        <div class="tools">
+          <button onclick="addTool('breathing')">Breathe</button>
+          <button onclick="addTool('journal')">Journal</button>
+        </div>
+        <form class="input-area" onsubmit="sendMessage(event)">
+          <input id="userInput" placeholder="Type your message..." />
+          <button type="submit">Send</button>
+        </form>
+      `;
+      const chatContainer = document.getElementById('chat-container');
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    async function sendMessage(event) {
+      event.preventDefault();
+      const input = document.getElementById('userInput');
+      const userText = input.value.trim();
+      if (!userText) return;
+      messages.push({ sender: 'user', text: userText });
+      renderChat();
+      input.value = '';
+
+      try {
+        const res = await fetch('http://localhost:5000/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userText })
+        });
+        const data = await res.json();
+        messages.push({ sender: 'bot', text: data.reply });
+      } catch {
+        messages.push({ sender: 'bot', text: 'Sorry, something went wrong.' });
+      }
+      renderChat();
+    }
+
+    function addTool(tool) {
+      if (tool === 'breathing') {
+        messages.push({ sender: 'bot', text: "Let's do a quick breathing exercise. Inhale for 4... hold for 4... exhale for 4. Repeat this a few times." });
+      } else if (tool === 'journal') {
+        messages.push({ sender: 'bot', text: "Here's a journaling prompt: What is one thing you’re grateful for today, and why?" });
+      }
+      renderChat();
+    }
+
+    renderMoodSelector();
+  </script>
+</body>
+</html>
