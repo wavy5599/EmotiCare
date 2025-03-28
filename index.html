@@ -5,14 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mental Health Chatbot</title>
   <style>
-    body {
+    html, body {
       margin: 0;
-      font-family: sans-serif;
+      padding: 0;
+      height: 100%;
+      font-family: 'Segoe UI', sans-serif;
       background: #1e1e2f;
       color: white;
       display: flex;
       flex-direction: column;
-      height: 100vh;
+    }
+    #app {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
     }
     .chat-container {
       flex: 1;
@@ -25,7 +31,8 @@
       margin-bottom: 1rem;
       padding: 0.75rem;
       border-radius: 10px;
-      max-width: 60%;
+      max-width: 80%;
+      word-wrap: break-word;
     }
     .bot {
       background: #3b82f6;
@@ -37,32 +44,41 @@
     }
     .input-area {
       display: flex;
-      padding: 1rem;
+      padding: 0.75rem;
       background: #111827;
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
     }
     input {
       flex: 1;
-      padding: 0.5rem;
+      padding: 0.6rem;
       border: none;
       border-radius: 5px 0 0 5px;
       background: #374151;
       color: white;
+      font-size: 1rem;
+      outline: none;
     }
     button {
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1rem;
       border: none;
       background: #2563eb;
       color: white;
       border-radius: 0 5px 5px 0;
       cursor: pointer;
+      font-size: 1rem;
     }
     .tools {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
-      margin: 0.5rem 0;
+      margin: 0.5rem 1rem;
     }
     .tools button {
       background: #6b21a8;
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
     }
     .mood-selector {
       display: flex;
@@ -70,11 +86,52 @@
       justify-content: center;
       align-items: center;
       flex: 1;
+      padding: 2rem;
+      text-align: center;
+    }
+    .mood-selector h2 {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+    }
+    .moods {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
     }
     .moods button {
       font-size: 2rem;
-      margin: 0.5rem;
+      padding: 0.5rem;
       background: transparent;
+      border: 2px solid #444;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .moods button:hover {
+      transform: scale(1.1);
+      background: #2d2d3f;
+    }
+    @media (max-width: 768px) {
+      .chat-container {
+        padding: 0.75rem;
+      }
+      .input-area {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      input, button {
+        width: 100%;
+        border-radius: 5px;
+      }
+      .tools {
+        flex-direction: column;
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+      }
+      .message {
+        font-size: 0.95rem;
+      }
     }
   </style>
 </head>
@@ -82,7 +139,6 @@
   <div id="app"></div>
   <script>
     const app = document.getElementById('app');
-
     let messages = [];
     let mood = null;
 
@@ -109,8 +165,8 @@
           ${messages.map(msg => `<div class="message ${msg.sender}">${msg.text}</div>`).join('')}
         </div>
         <div class="tools">
-          <button onclick="addTool('breathing')">Breathe</button>
-          <button onclick="addTool('journal')">Journal</button>
+          <button onclick="addTool('breathing')">🧘 Breathe</button>
+          <button onclick="addTool('journal')">📝 Journal</button>
         </div>
         <form class="input-area" onsubmit="sendMessage(event)">
           <input id="userInput" placeholder="Type your message..." />
