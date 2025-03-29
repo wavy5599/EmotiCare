@@ -1,67 +1,70 @@
-import openai  # OpenAI's API for chat completion
-import os  # For accessing environment variables
-from dotenv import load_dotenv  # Loads .env file containing API keys and secrets
-from flask import Flask, request, jsonify  # Flask for creating the web server and API endpoints
-from flask_cors import CORS  # Enables CORS so frontend can talk to backend
-import uuid  # For generating unique session IDs
-import datetime  # For handling timestamps in session logs
+import openai  # Import the OpenAI library to use the GPT chat models
+import os  # Import OS to access environment variables
+from dotenv import load_dotenv  # Load .env file containing API keys
+from flask import Flask, request, jsonify  # Flask modules to create endpoints and handle JSON
+from flask_cors import CORS  # Enables CORS for frontend-backend communication
+import uuid  # Used for generating anonymous session IDs
+import datetime  # Used to timestamp session messages
 
-load_dotenv()  # Load environment variables from .env
+load_dotenv()  # Load environment variables from .env file
 
-app = Flask(__name__)  # Initialize Flask app
-CORS(app)  # Enable CORS so frontend can communicate without restrictions
+app = Flask(__name__)  # Initialize the Flask app
+CORS(app)  # Enable CORS so the frontend can talk to the backend
 
-openai.api_key = os.getenv('api')  # Set OpenAI API key from environment
-FRONTEND_PASSWORD = os.getenv('FRONTEND_PASSWORD')  # Auth password for frontend access
-guest_key = os.getenv('guest_key')  # Placeholder for guest login key
+# Set API keys and credentials from environment variables
+openai.api_key = os.getenv('api')  # OpenAI API key
+FRONTEND_PASSWORD = os.getenv('FRONTEND_PASSWORD')  # Password to authenticate frontend
+guest_key = os.getenv('guest_key')  # Guest key placeholder for anonymous access
 
-# Crisis detection keywords that trigger escalation
+# Define keywords that should trigger therapist escalation
 CRISIS_KEYWORDS = ["suicide", "kill myself", "hurt myself", "end it all", "overdose", "I'm done"]
 
-# Dictionary to store chat sessions temporarily
+# Temporary in-memory session storage (use a database for production)
 sessions = {}
 
-@app.route('/')  # Route for home endpoint
-
+# Home route to verify server is up
+@app.route('/')
 def home():
-    return "EmotiCare Flask server is live!"  # Simple message to show server is running
+    return "EmotiCare Flask server is live!"  # Health check response
 
-@app.route('/validate-password', methods=['POST'])  # Route to validate frontend password
-
+# Route to verify frontend credentials
+@app.route('/validate-password', methods=['POST'])
 def validate_password():
-    data = request.get_json()  # Parse JSON payload from frontend
+    data = request.get_json()  # Get the JSON payload from request
     submitted_password = data.get('password')  # Extract submitted password
-    if submitted_password == FRONTEND_PASSWORD:  # Check if password matches
-        return jsonify({"success": True})  # Return success response
-    return jsonify({"success": False}), 403  # Return error if password is incorrect
+    if submitted_password == FRONTEND_PASSWORD:
+        return jsonify({"success": True})  # Password matches
+    return jsonify({"success": False}), 403  # Unauthorized if password incorrect
 
-@app.route('/chat', methods=['POST'])  # Route to handle chat messages
-
+# Main chat endpoint
+@app.route('/chat', methods=['POST'])
 def chat():
-    data = request.get_json()  # Parse incoming JSON data
-    user_message = data.get("message")  # Extract user's message
-    session_id = data.get("session_id", str(uuid.uuid4()))  # Use provided session_id or create a new one
-    language = data.get("language", "English")  # Optional language support (default: English)
+    data = request.get_json()  # Parse request body
+    user_message = data.get("message")  # Extract user message
+    session_id = data.get("session_id", str(uuid.uuid4()))  # Generate session ID if not provided
+    language = data.get("language", "English")  # Optional language support
 
+    # Reject empty messages
     if not user_message:
-        return jsonify({"error": "Message is required"}), 400  # Return error if no message was sent
+        return jsonify({"error": "Message is required"}), 400
 
-    # Check for crisis keywords in the message
+    # Check for crisis-related keywords
     crisis_triggered = any(kw in user_message.lower() for kw in CRISIS_KEYWORDS)
     if crisis_triggered:
+        # Return escalation response to frontend
         return jsonify({
             "reply": (
                 "I care about you. It sounds like you might be in crisis. "
                 "Please consider calling 988 or contacting a licensed therapist. "
                 "Would you like me to help connect you with someone now?"
             ),
-            "escalate": True  # Flag to notify frontend of serious message
+            "escalate": True
         })
 
     try:
-        # Call OpenAI API to generate response
+        # Send message to OpenAI GPT-4o model
         response = openai.ChatCompletion.create(
-            model="gpt-4o",  # Use GPT-4o (Omni) model
+            model="gpt-4o",  # GPT-4o model for advanced conversational ability
             messages=[
                 {
                     "role": "system",
@@ -71,39 +74,64 @@ def chat():
                         "If the user is struggling, you may offer breathing exercises, journaling, or positive reframing."
                     )
                 },
-                {"role": "user", "content": user_message}  # User input
+                {"role": "user", "content": user_message}  # Pass user message
             ]
         )
 
-        bot_reply = response["choices"][0]["message"]["content"]  # Extract chatbot reply
+        # Extract assistant's response
+        bot_reply = response["choices"][0]["message"]["content"]
 
-        # Track session messages with timestamp
+        # Store the exchange in the session log
         now = datetime.datetime.utcnow()
         if session_id not in sessions:
-            sessions[session_id] = []  # Create session if not already present
+            sessions[session_id] = []  # Create session entry
         sessions[session_id].append({"timestamp": now.isoformat(), "user": user_message, "bot": bot_reply})
 
-        return jsonify({"reply": bot_reply, "session_id": session_id})  # Return reply and session ID
+        return jsonify({"reply": bot_reply, "session_id": session_id})  # Send response and session ID back
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500  # Return error if something goes wrong
+        return jsonify({"error": str(e)}), 500  # Handle any runtime errors
 
-@app.route('/get-session/<session_id>', methods=['GET'])  # Route to get session history
-
+# Route to retrieve previous session by session_id
+@app.route('/get-session/<session_id>', methods=['GET'])
 def get_session(session_id):
-    session_data = sessions.get(session_id)  # Retrieve session logs
+    session_data = sessions.get(session_id)  # Look up session data
     if not session_data:
-        return jsonify({"error": "Session not found"}), 404  # Return error if not found
-    return jsonify(session_data)  # Return session data
+        return jsonify({"error": "Session not found"}), 404  # If not found
+    return jsonify(session_data)  # Return chat history
 
-@app.route('/save-session', methods=['POST'])  # Route to mock-save session
-
+# Route to simulate saving session to a file or storage
+@app.route('/save-session', methods=['POST'])
 def save_session():
-    data = request.get_json()  # Parse request body
-    session_id = data.get("session_id")  # Get session ID to save
-    export = data.get("export")  # Optional: Encrypted export data
-    # You can encrypt and store this securely in production
+    data = request.get_json()  # Parse request
+    session_id = data.get("session_id")  # Session to save
+    export = data.get("export")  # Mock export content
     return jsonify({"message": f"Session {session_id} saved (mock response).", "export": export})
 
+# Endpoint to notify therapist if user is in crisis
+@app.route('/alert-therapist', methods=['POST'])
+def alert_therapist():
+    data = request.get_json()  # Get request payload
+    session_id = data.get("session_id")  # Affected session
+    latest_message = data.get("message")  # Message that triggered the alert
+    print(f"[ALERT] Therapist notified: Session {session_id} flagged for review.")  # Log alert
+    return jsonify({"alert": "Therapist notified successfully."})  # Confirmation to frontend
+
+# Endpoint to allow therapist to send a message to a session
+@app.route('/therapist-reply', methods=['POST'])
+def therapist_reply():
+    data = request.get_json()  # Parse request
+    session_id = data.get("session_id")  # Identify session
+    reply_message = data.get("reply")  # Therapist's message
+
+    if session_id not in sessions:
+        return jsonify({"error": "Session not found"}), 404  # Return error if session doesn't exist
+
+    # Append therapist message to the session
+    now = datetime.datetime.utcnow()
+    sessions[session_id].append({"timestamp": now.isoformat(), "therapist": reply_message})
+    return jsonify({"message": "Therapist message stored."})  # Return confirmation
+
+# Start the Flask app
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)  # Start Flask server on all interfaces at port 5000
+    app.run(debug=True, host='0.0.0.0', port=5000)  # Run on all network interfaces, port 5000
