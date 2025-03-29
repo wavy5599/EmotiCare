@@ -1,9 +1,17 @@
 :root {
-  --bg-gradient-dark: linear-gradient(135deg, #1e1e2f, #2e2e3f); /* Dark theme gradient */
-  --bg-gradient-light: linear-gradient(135deg, #dbeafe, #e0f2fe); /* Light theme gradient */
-  --text-dark: white; /* Text color for dark mode */
-  --text-light: #1e293b; /* Text color for light mode */
+  /* Cool dark mode: deep blue/teal gradient */
+  --bg-gradient-dark: linear-gradient(135deg, #0f2027, #435ac8, #2c5364);
+
+  /* Soft light mode: icy blue to soft silver */
+  --bg-gradient-light: linear-gradient(135deg, #c9d6ff, #e2e2e2);
+
+  /* Text color for dark mode */
+  --text-dark: #f1f5f9;
+
+  /* Text color for light mode */
+  --text-light: #1e293b;
 }
+
 html, body {
   font-family: "Open Sans", "Helvetica Neue",;
   margin: 0; /* Remove default margin */
@@ -26,6 +34,18 @@ body.light-mode {
   flex-grow: 1; /* Fill remaining space */
   height: 100%; /* Full height */
 }
+
+.intro-heading {
+  color: var(--text-dark);
+  transition: color 0.3s ease;
+}
+
+body.light-mode .intro-heading {
+  color: var(--text-light);
+}
+
+
+
 .chat-container {
   flex: 1; /* Take up all available space */
   display: flex; /* Flex container */
@@ -79,7 +99,7 @@ textarea.input-modern {
   padding: 0.6rem; /* Padding */
   border-radius: 8px 0 0 8px; /* Rounded left */
   border: none; /* No border */
-  background: #374151; /* Background */
+  background: #567099; /* Background */
   color: white; /* Text color */
   line-height: 1.4; /* Line height */
   font-family: 'Segoe UI', sans-serif; /* Font */
@@ -91,7 +111,7 @@ body.light-mode textarea.input-modern {
 }
 body.light-mode input {
   background: #cbd5e1; /* Light input background */
-  color: #1e293b; /* Light input text */
+  color: #4b6da4; /* Light input text */
 }
 
 .terms-text {
@@ -107,7 +127,7 @@ body.light-mode input {
   color: #2563eb;
 }
 
-button {
+button  {
   padding: 0.6rem 1rem; /* Size of button */
   border: none; /* No border */
   background: #2563eb; /* Button background */
@@ -115,7 +135,22 @@ button {
   border-radius: 0 5px 5px 0; /* Rounded right */
   cursor: pointer; /* Cursor style */
   font-size: 1rem; /* Font size */
+  margin-bottom: 10px;
+
 }
+
+.go-back-btn {
+
+  border: none; /* No border */
+  background: #2563eb; /* Button background */
+  color: white; /* Text color */
+  border-radius: 30px; /* Rounded corners */
+  cursor: pointer; /* Cursor style */
+  font-size: 1rem; /* Font size */
+  margin-bottom: 10px;
+}
+
+
 
 .intro-wrapper {
   display: flex;
@@ -220,7 +255,163 @@ button {
 .intro-form button:hover {
   background: #2563eb; /* Hover effect */
 }
-@media (max-width: 768px) {
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: left;
+  gap: 0.3rem;
+  padding: 0.5rem;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  animation: typingAnim 1.2s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* styles for the terms of service */
+
+
+h1, h2 {
+  color: #c9d6ff;
+}
+a {
+  color: #90cdf4;
+  text-decoration: none;
+  outline: none;
+}
+a:hover {
+  color: #63b3ed;
+}
+.container {
+  max-width: 800px;
+  margin: auto;
+}
+
+
+
+@keyframes typingAnim {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+
+/* Background gradient animation for body */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+html, body {
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+/* Fade in messages */
+.message {
+  animation: fadeIn 0.6s ease-in;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Pop/hover effect on mood buttons */
+.moods button {
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+.moods button:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Smooth button hover animations */
+button,
+.intro-form button,
+.tools button,
+.mode-toggle {
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+button:hover,
+.intro-form button:hover,
+.tools button:hover,
+.mode-toggle:hover {
+  transform: scale(1.05);
+}
+
+input:focus,
+textarea.input-modern:focus,
+.intro-form input:focus,
+.intro-form textarea:focus {
+  background: inherit; /* Keeps it same as default state */
+  color: inherit;       /* Keeps text color same */
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+input:focus,
+textarea.input-modern:focus,
+.intro-form input:focus,
+.intro-form textarea:focus {
+  background: inherit;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.2); /* Soft glow */
+}
+
+textarea.input-modern:focus {
+  background: #567099;
+  color: white;
+  outline: none;
+  box-shadow: none;
+}
+
+body.light-mode textarea.input-modern:focus {
+  background: #e2e8f0;
+  color: #6b8fc9;
+  outline: none;
+  box-shadow: none;
+}
+
+textarea.input-modern:focus {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.15);
+}
+
+body.light-mode textarea.input-modern:focus {
+  border: 1px solid rgba(107, 143, 201, 0.3);
+  box-shadow: 0 0 0 2px rgba(107, 143, 201, 0.15);
+}
+
+
+
+
+
+
+/* Subtle slide-in for the intro form */
+.intro-form {
+  animation: slideUp 0.5s ease-in-out;
+}
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+
+@media (max-width: 760px) {
   .chat-container {
     padding: 0.75rem; /* Reduced padding on small screens */
   }
@@ -252,3 +443,23 @@ button {
     cursor: pointer; /* Pointer cursor */
   }
 }
+
+/* Ensure the dark/light mode toggle stays accessible and doesn't overlap UI on mobile */
+
+
+/* Make the button a bit bigger and more tappable on small screens */
+@media (max-width: 700px) {
+  .mode-toggle {
+    position: absolute; /* Positioned relative to parent */
+    top: 1rem; /* Distance from top */
+    right: 1rem; /* Distance from right */
+    background: #64748b; /* Toggle color */
+    color: white; /* Text color */
+    border: none; /* No border */
+    width: 60px;
+    padding: 0.5rem 1rem; /* Size */
+    border-radius: 5px; /* Rounded edges */
+    cursor: pointer; /* Cursor */
+  }
+}
+

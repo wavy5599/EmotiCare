@@ -1,4 +1,4 @@
-// Updated logic.js with pre-chat form -> mood -> chat flow + Web3Forms integration
+// Updated logic.js with typing animation integration
 
 const app = document.getElementById('app');
 let messages = [];
@@ -10,7 +10,7 @@ function renderIntroForm() {
   <div class="intro-wrapper">
     <img class="logo" src="/assets/logo.png" alt="EmotiCare Logo" />
     <div class="intro-form">
-      <h2>Before we begin...</h2>
+      <h2 class="intro-heading">Before we begin...</h2>
       <form onsubmit="startSession(event)">
         <input id="nameInput" placeholder="Your name (optional)" />
         <input id="ageInput" type="number" placeholder="Your age (optional)" />
@@ -19,7 +19,7 @@ function renderIntroForm() {
         <button type="submit">Continue</button>
         <p class="terms-text">
           By continuing, you agree to our
-          <a href="terms.html" target="_blank">Terms of Service</a>.
+          <a href="/terms-service.html" target="_blank">Terms of Service</a>.
         </p>
       </form>
     </div>
@@ -34,7 +34,6 @@ async function startSession(event) {
   const reason = document.getElementById('reasonInput').value;
   const email = document.getElementById('emailInput').value;
 
-  // 1. Send to Flask backend
   const res = await fetch('http://localhost:5000/start-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -44,9 +43,8 @@ async function startSession(event) {
   const data = await res.json();
   sessionId = data.session_id;
 
-  // 2. Send to Web3Forms
   const web3formPayload = {
-    access_key: "fc46354a-fc16-4272-b00f-f7b76ca733d1", // <-- Replace with real key
+    access_key: "ba6ae6bd-3d82-4477-b7f2-d54fb5e69547",
     name,
     email,
     subject: "New EmotiCare Session",
@@ -64,6 +62,14 @@ async function startSession(event) {
 
   renderMoodSelector();
 }
+
+
+
+
+
+
+
+
 
 function renderMoodSelector() {
   app.innerHTML = `
@@ -85,7 +91,11 @@ function selectMood(selectedMood) {
 function renderChat() {
   app.innerHTML = `
     <div class="chat-container" id="chat-container">
-      ${messages.map(msg => `<div class="message ${msg.sender}" style="white-space: pre-wrap; line-height: 1.5;">${msg.text}</div>`).join('')}
+      ${messages.map(msg =>
+        msg.typing
+          ? `<div class="message bot"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`
+          : `<div class="message ${msg.sender}" style="white-space: pre-wrap; line-height: 1.5;">${msg.text}</div>`
+      ).join('')}
     </div>
     <div class="tools">
       <button onclick="addTool('breathing')">🧘 Breathe</button>
@@ -105,9 +115,13 @@ async function sendMessage(event) {
   const input = document.getElementById('userInput');
   const userText = input.value.trim();
   if (!userText) return;
+
   messages.push({ sender: 'user', text: userText });
   renderChat();
   input.value = '';
+
+  messages.push({ sender: 'bot', typing: true });
+  renderChat();
 
   try {
     const res = await fetch('http://localhost:5000/chat', {
@@ -115,11 +129,15 @@ async function sendMessage(event) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: userText, session_id: sessionId })
     });
+
     const data = await res.json();
+    messages = messages.filter(msg => !msg.typing);
     messages.push({ sender: 'bot', text: data.reply });
   } catch {
+    messages = messages.filter(msg => !msg.typing);
     messages.push({ sender: 'bot', text: 'Sorry, something went wrong.' });
   }
+
   renderChat();
 }
 
