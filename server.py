@@ -36,6 +36,22 @@ def validate_password():
         return jsonify({"success": True})  # Password matches
     return jsonify({"success": False}), 403  # Unauthorized if password incorrect
 
+# Route to collect user intro before chat starts
+@app.route('/start-session', methods=['POST'])
+def start_session():
+    data = request.get_json()  # Extract initial user data
+    session_id = str(uuid.uuid4())  # Create unique session ID
+    # Store name, age, and reason in session
+    sessions[session_id] = [{
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "intro": {
+            "name": data.get("name", "Anonymous"),
+            "age": data.get("age", "N/A"),
+            "reason": data.get("reason", "Not specified")
+        }
+    }]
+    return jsonify({"session_id": session_id})
+
 # Main chat endpoint
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -51,7 +67,6 @@ def chat():
     # Check for crisis-related keywords
     crisis_triggered = any(kw in user_message.lower() for kw in CRISIS_KEYWORDS)
     if crisis_triggered:
-        # Return escalation response to frontend
         return jsonify({
             "reply": (
                 "I care about you. It sounds like you might be in crisis. "
@@ -62,76 +77,78 @@ def chat():
         })
 
     try:
-        # Send message to OpenAI GPT-4o model
+        # Fetch intro info if available
+        intro_info = sessions.get(session_id, [{}])[0].get("intro", {})
+        system_prompt = (
+            f"You are EmotiCare, an empathetic mental health assistant.\n"
+            f"User Name: {intro_info.get('name', 'Anonymous')}\n"
+            f"User Age: {intro_info.get('age', 'N/A')}\n"
+            f"User Reason for Chat: {intro_info.get('reason', 'Not specified')}\n\n"
+            "Provide emotional support, validate feelings, and help users gently. "
+            "If the user is struggling, you may offer breathing exercises, journaling, or positive reframing."
+        )
+
+        # Send message to GPT model
         response = openai.ChatCompletion.create(
-            model="gpt-4o",  # GPT-4o model for advanced conversational ability
+            model="gpt-4o",
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are EmotiCare, an empathetic mental health assistant. "
-                        "Provide emotional support, validate feelings, and help users gently. "
-                        "If the user is struggling, you may offer breathing exercises, journaling, or positive reframing."
-                    )
-                },
-                {"role": "user", "content": user_message}  # Pass user message
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
             ]
         )
 
-        # Extract assistant's response
         bot_reply = response["choices"][0]["message"]["content"]
 
-        # Store the exchange in the session log
+        # Append message to session
         now = datetime.datetime.utcnow()
         if session_id not in sessions:
-            sessions[session_id] = []  # Create session entry
+            sessions[session_id] = []
         sessions[session_id].append({"timestamp": now.isoformat(), "user": user_message, "bot": bot_reply})
 
-        return jsonify({"reply": bot_reply, "session_id": session_id})  # Send response and session ID back
+        return jsonify({"reply": bot_reply, "session_id": session_id})
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500  # Handle any runtime errors
+        return jsonify({"error": str(e)}), 500
 
 # Route to retrieve previous session by session_id
 @app.route('/get-session/<session_id>', methods=['GET'])
 def get_session(session_id):
-    session_data = sessions.get(session_id)  # Look up session data
+    session_data = sessions.get(session_id)
     if not session_data:
-        return jsonify({"error": "Session not found"}), 404  # If not found
-    return jsonify(session_data)  # Return chat history
+        return jsonify({"error": "Session not found"}), 404
+    return jsonify(session_data)
 
 # Route to simulate saving session to a file or storage
 @app.route('/save-session', methods=['POST'])
 def save_session():
-    data = request.get_json()  # Parse request
-    session_id = data.get("session_id")  # Session to save
-    export = data.get("export")  # Mock export content
+    data = request.get_json()
+    session_id = data.get("session_id")
+    export = data.get("export")
     return jsonify({"message": f"Session {session_id} saved (mock response).", "export": export})
 
 # Endpoint to notify therapist if user is in crisis
 @app.route('/alert-therapist', methods=['POST'])
 def alert_therapist():
-    data = request.get_json()  # Get request payload
-    session_id = data.get("session_id")  # Affected session
-    latest_message = data.get("message")  # Message that triggered the alert
-    print(f"[ALERT] Therapist notified: Session {session_id} flagged for review.")  # Log alert
-    return jsonify({"alert": "Therapist notified successfully."})  # Confirmation to frontend
+    data = request.get_json()
+    session_id = data.get("session_id")
+    latest_message = data.get("message")
+    print(f"[ALERT] Therapist notified: Session {session_id} flagged for review.")
+    return jsonify({"alert": "Therapist notified successfully."})
 
 # Endpoint to allow therapist to send a message to a session
 @app.route('/therapist-reply', methods=['POST'])
 def therapist_reply():
-    data = request.get_json()  # Parse request
-    session_id = data.get("session_id")  # Identify session
-    reply_message = data.get("reply")  # Therapist's message
+    data = request.get_json()
+    session_id = data.get("session_id")
+    reply_message = data.get("reply")
 
     if session_id not in sessions:
-        return jsonify({"error": "Session not found"}), 404  # Return error if session doesn't exist
+        return jsonify({"error": "Session not found"}), 404
 
-    # Append therapist message to the session
     now = datetime.datetime.utcnow()
     sessions[session_id].append({"timestamp": now.isoformat(), "therapist": reply_message})
-    return jsonify({"message": "Therapist message stored."})  # Return confirmation
+    return jsonify({"message": "Therapist message stored."})
 
 # Start the Flask app
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)  # Run on all network interfaces, port 5000
+    app.run(debug=True, host='0.0.0.0', port=5000)
