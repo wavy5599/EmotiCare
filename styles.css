@@ -116,35 +116,75 @@ body.light-mode textarea.input-modern:focus {
   box-shadow: none;
 }
 
+
+/* === CLEANED + FIXED INPUTS & TEXTAREAS === */
 input,
-input:focus,
+textarea,
 .intro-form input,
-.intro-form input:focus,
 .intro-form textarea,
-.intro-form textarea:focus {
+textarea.input-modern {
   width: 100%;
   padding: 0.8rem;
   border-radius: 8px;
   border: none;
   font-size: 1rem;
-  background: #374151;
-  color: white;
   font-family: 'Segoe UI', sans-serif;
-  outline: none;
   margin-bottom: 10px;
-}
-
-body.light-mode input,
-body.light-mode input:focus,
-body.light-mode .intro-form input,
-body.light-mode .intro-form input:focus,
-body.light-mode .intro-form textarea,
-body.light-mode .intro-form textarea:focus {
-  background: #e2e8f0;
-  color: #6b8fc9;
+  background-color: #1f2937;
+  color: #f1f5f9;
   outline: none;
   box-shadow: none;
+  caret-color: #f1f5f9;
+  transition: background 0.3s ease, color 0.3s ease;
 }
+
+/* Focus state */
+input:focus,
+textarea:focus,
+textarea.input-modern:focus {
+  background-color: #1f2937;
+  color: #f1f5f9;
+  outline: none;
+}
+
+/* Chrome autofill fix */
+input:-webkit-autofill,
+textarea:-webkit-autofill {
+  box-shadow: 0 0 0 1000px #1f2937 inset;
+  -webkit-text-fill-color: #f1f5f9;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* === LIGHT MODE VARIANT === */
+body.light-mode input,
+body.light-mode textarea,
+body.light-mode .intro-form input,
+body.light-mode .intro-form textarea,
+body.light-mode textarea.input-modern {
+  background-color: #e2e8f0;
+  color: #1e293b;
+  caret-color: #1e293b;
+}
+
+body.light-mode input:focus,
+body.light-mode textarea:focus,
+body.light-mode textarea.input-modern:focus {
+  background-color: #e2e8f0;
+  color: #1e293b;
+  box-shadow: 0 0 0 2px #2563eb;
+  outline: none;
+}
+
+body.light-mode input:-webkit-autofill,
+body.light-mode textarea:-webkit-autofill {
+  box-shadow: 0 0 0 1000px #e2e8f0 inset;
+  -webkit-text-fill-color: #1e293b;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+
+
+
 
 button,
 .intro-form button,
