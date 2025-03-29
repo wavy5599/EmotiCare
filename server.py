@@ -5,6 +5,9 @@ from flask import Flask, request, jsonify  # Flask modules to create endpoints a
 from flask_cors import CORS  # Enables CORS for frontend-backend communication
 import uuid  # Used for generating anonymous session IDs
 import datetime  # Used to timestamp session messages
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -17,10 +20,63 @@ FRONTEND_PASSWORD = os.getenv('FRONTEND_PASSWORD')  # Password to authenticate f
 guest_key = os.getenv('guest_key')  # Guest key placeholder for anonymous access
 
 # Define keywords that should trigger therapist escalation
-CRISIS_KEYWORDS = ["suicide", "kill myself", "hurt myself", "end it all", "overdose", "I'm done"]
+CRISIS_KEYWORDS = ["suicide", "kill myself", "hurt myself", "end it all", "overdose", "I'm done", "drugs"]
 
 # Temporary in-memory session storage (use a database for production)
 sessions = {}
+
+def send_emails(name, age, user_email, reason):
+    sender = os.getenv('EMAIL_USER')
+    password = os.getenv('EMAIL_PASS')
+    therapist_email = os.getenv('THERAPIST_EMAIL')
+
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender, password)
+
+        # Email to therapist
+        therapist_msg = MIMEMultipart()
+        therapist_msg['From'] = sender
+        therapist_msg['To'] = therapist_email
+        therapist_msg['Subject'] = f"New EmotiCare Session from {name or 'Anonymous'}"
+
+        therapist_body = f"""
+        A user has started a new session:
+
+        Name: {name or 'Anonymous'}
+        Age: {age or 'N/A'}
+        Email: {user_email or 'Not provided'}
+        Reason for Reaching Out: {reason}
+        """
+        therapist_msg.attach(MIMEText(therapist_body, 'plain'))
+        server.send_message(therapist_msg)
+
+        # Email to user
+        if user_email:
+            user_msg = MIMEMultipart()
+            user_msg['From'] = sender
+            user_msg['To'] = user_email
+            user_msg['Subject'] = "Welcome to EmotiCare 💙"
+
+            user_body = f"""
+            Hi {name or 'there'},
+
+            Thank you for reaching out to EmotiCare. We're here to support you.
+            A licensed therapist may review your session and follow up if needed.
+
+            In the meantime, feel free to explore helpful exercises and continue chatting.
+
+            – EmotiCare Team
+            """
+            user_msg.attach(MIMEText(user_body, 'plain'))
+            server.send_message(user_msg)
+
+        server.quit()
+        print("[INFO] Emails sent to therapist and user.")
+
+    except Exception as e:
+        print(f"[ERROR] Failed to send emails: {e}")
 
 # Home route to verify server is up
 @app.route('/')
@@ -41,15 +97,23 @@ def validate_password():
 def start_session():
     data = request.get_json()  # Extract initial user data
     session_id = str(uuid.uuid4())  # Create unique session ID
-    # Store name, age, and reason in session
+    name = data.get("name", "Anonymous")
+    age = data.get("age", "N/A")
+    reason = data.get("reason", "Not specified")
+    email = data.get("email", "")
+
     sessions[session_id] = [{
         "timestamp": datetime.datetime.utcnow().isoformat(),
         "intro": {
-            "name": data.get("name", "Anonymous"),
-            "age": data.get("age", "N/A"),
-            "reason": data.get("reason", "Not specified")
+            "name": name,
+            "age": age,
+            "reason": reason,
+            "email": email
         }
     }]
+
+    send_emails(name, age, email, reason)
+
     return jsonify({"session_id": session_id})
 
 # Main chat endpoint

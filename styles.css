@@ -87,7 +87,7 @@ textarea.input-modern {
 }
 body.light-mode textarea.input-modern {
   background: #e2e8f0; /* Light mode textarea */
-  color: #1e293b; /* Light mode text */
+  color: #6b8fc9; /* Light mode text */
 }
 body.light-mode input {
   background: #cbd5e1; /* Light input background */

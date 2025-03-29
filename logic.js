@@ -1,4 +1,4 @@
-// Updated logic.js with pre-chat form -> mood -> chat flow
+// Updated logic.js with pre-chat form -> mood -> chat flow + Web3Forms integration
 
 const app = document.getElementById('app');
 let messages = [];
@@ -25,7 +25,6 @@ function renderIntroForm() {
     </div>
   </div>
 `;
-
 }
 
 async function startSession(event) {
@@ -33,15 +32,36 @@ async function startSession(event) {
   const name = document.getElementById('nameInput').value;
   const age = document.getElementById('ageInput').value;
   const reason = document.getElementById('reasonInput').value;
+  const email = document.getElementById('emailInput').value;
 
+  // 1. Send to Flask backend
   const res = await fetch('http://localhost:5000/start-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, age, reason })
+    body: JSON.stringify({ name, age, reason, email })
   });
 
   const data = await res.json();
   sessionId = data.session_id;
+
+  // 2. Send to Web3Forms
+  const web3formPayload = {
+    access_key: "fc46354a-fc16-4272-b00f-f7b76ca733d1", // <-- Replace with real key
+    name,
+    email,
+    subject: "New EmotiCare Session",
+    message: `Name: ${name || 'Anonymous'}\nAge: ${age || 'N/A'}\nReason: ${reason}`
+  };
+
+  await fetch("https://api.web3forms.com/submit", {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(web3formPayload)
+  });
+
   renderMoodSelector();
 }
 
