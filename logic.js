@@ -1,5 +1,12 @@
 // Updated logic.js with typing animation integration and comments
 
+
+let userName = '';
+let userAge = '';
+let userEmail = '';
+let userReason = '';
+
+
 const app = document.getElementById('app'); // Get reference to the app container
 let messages = []; // Store chat messages
 let mood = null; // Store user mood
@@ -32,9 +39,15 @@ function renderIntroForm() {
 async function startSession(event) {
   event.preventDefault();
   const name = document.getElementById('nameInput').value;
-  const age = document.getElementById('ageInput').value;
-  const reason = document.getElementById('reasonInput').value;
-  const email = document.getElementById('emailInput').value;
+const age = document.getElementById('ageInput').value;
+const reason = document.getElementById('reasonInput').value;
+const email = document.getElementById('emailInput').value;
+
+userName = name;
+userAge = age;
+userEmail = email;
+userReason = reason;
+
 
   // Send session start to backend
   const res = await fetch('http://localhost:5000/start-session', {
@@ -57,14 +70,62 @@ async function startSession(event) {
 
   await fetch("https://api.web3forms.com/submit", {
     method: "POST",
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify(web3formPayload)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, age, reason, email })
   });
 
   renderMoodSelector(); // Show mood selector after form
+}
+async function sendToDoctor() {
+  const input = document.getElementById('userInput');
+  const userText = input.value.trim();
+
+  if (!userText) {
+    alert("Please enter a message before sending.");
+    return;
+  }
+
+  const payload = {
+    access_key: "ba6ae6bd-3d82-4477-b7f2-d54fb5e69547",
+    subject: "User Chat Message to Therapist",
+    name: userName,
+    email: userEmail,
+    message: `
+🧠 New Message from EmotiCare:
+
+Name: ${userName || 'Anonymous'}
+Age: ${userAge || 'N/A'}
+Email: ${userEmail || 'Not Provided'}
+
+Initial Concern:
+${userReason || 'Not Provided'}
+
+User's Message:
+"${userText}"
+    `.trim()
+  };
+
+  try {
+    const response = await fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      alert("Message successfully sent to the therapist.");
+      input.value = ''; // Clear the input box
+    } else {
+      alert("Failed to send message. Please try again.");
+    }
+  } catch (err) {
+    alert("Error sending message to the therapist.");
+    console.error(err);
+  }
 }
 
 // Render mood selection screen
@@ -103,7 +164,7 @@ function renderChat() {
     <form class="input-area" onsubmit="sendMessage(event)">
       <textarea id="userInput" class="input-modern" placeholder="Type something you're feeling..." autocomplete="off" rows="1" oninput="autoExpand(this)"></textarea>
       <button type="submit">Send to 🤖</button>
-      <button type="submit">Send to 👨‍⚕️</button>
+      <button type="button" onclick="sendToDoctor()">Send to 👨‍⚕️</button>
     </form>
   `;
   const chatContainer = document.getElementById('chat-container');
@@ -117,15 +178,14 @@ async function sendMessage(event) {
   const userText = input.value.trim();
   if (!userText) return;
 
-  messages.push({ sender: 'user', text: userText }); // Push user message
+  messages.push({ sender: 'user', text: userText });
   renderChat();
   input.value = '';
 
-  messages.push({ sender: 'bot', typing: true }); // Show typing animation
+  messages.push({ sender: 'bot', typing: true });
   renderChat();
 
   try {
-    // Send message to backend and await reply
     const res = await fetch('http://localhost:5000/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -133,9 +193,12 @@ async function sendMessage(event) {
     });
 
     const data = await res.json();
-    messages = messages.filter(msg => !msg.typing); // Remove typing
-    messages.push({ sender: 'bot', text: data.reply }); // Add bot reply
-  } catch {
+    console.log("API Response:", data); // <-- DEBUG LOG
+
+    const botReply = data.reply || data.message || "Sorry, I didn't understand that.";
+    messages = messages.filter(msg => !msg.typing);
+    messages.push({ sender: 'bot', text: botReply });
+  } catch (err) {
     messages = messages.filter(msg => !msg.typing);
     messages.push({ sender: 'bot', text: 'Sorry, something went wrong.' });
   }
