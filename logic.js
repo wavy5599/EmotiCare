@@ -1,10 +1,11 @@
-// Updated logic.js with typing animation integration
+// Updated logic.js with typing animation integration and comments
 
-const app = document.getElementById('app');
-let messages = [];
-let mood = null;
-let sessionId = null;
+const app = document.getElementById('app'); // Get reference to the app container
+let messages = []; // Store chat messages
+let mood = null; // Store user mood
+let sessionId = null; // Store session ID from backend
 
+// Render the initial form for user input
 function renderIntroForm() {
   app.innerHTML = `
   <div class="intro-wrapper">
@@ -24,9 +25,10 @@ function renderIntroForm() {
       </form>
     </div>
   </div>
-`;
+  `;
 }
 
+// Handle form submission and start session
 async function startSession(event) {
   event.preventDefault();
   const name = document.getElementById('nameInput').value;
@@ -34,6 +36,7 @@ async function startSession(event) {
   const reason = document.getElementById('reasonInput').value;
   const email = document.getElementById('emailInput').value;
 
+  // Send session start to backend
   const res = await fetch('http://localhost:5000/start-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -43,6 +46,7 @@ async function startSession(event) {
   const data = await res.json();
   sessionId = data.session_id;
 
+  // Send user session info via Web3Forms
   const web3formPayload = {
     access_key: "ba6ae6bd-3d82-4477-b7f2-d54fb5e69547",
     name,
@@ -60,17 +64,10 @@ async function startSession(event) {
     body: JSON.stringify(web3formPayload)
   });
 
-  renderMoodSelector();
+  renderMoodSelector(); // Show mood selector after form
 }
 
-
-
-
-
-
-
-
-
+// Render mood selection screen
 function renderMoodSelector() {
   app.innerHTML = `
     <div class="mood-selector">
@@ -82,12 +79,14 @@ function renderMoodSelector() {
   `;
 }
 
+// Handle mood selection and start conversation
 function selectMood(selectedMood) {
   mood = selectedMood;
   messages.push({ sender: 'bot', text: `Hey there 👋 I see you're feeling ${mood}. I'm here for you. If there is anything you want to talk about today!` });
   renderChat();
 }
 
+// Render chat UI and tools
 function renderChat() {
   app.innerHTML = `
     <div class="chat-container" id="chat-container">
@@ -103,27 +102,30 @@ function renderChat() {
     </div>
     <form class="input-area" onsubmit="sendMessage(event)">
       <textarea id="userInput" class="input-modern" placeholder="Type something you're feeling..." autocomplete="off" rows="1" oninput="autoExpand(this)"></textarea>
-      <button type="submit">Send</button>
+      <button type="submit">Send to 🤖</button>
+      <button type="submit">Send to 👨‍⚕️</button>
     </form>
   `;
   const chatContainer = document.getElementById('chat-container');
-  chatContainer.scrollTop = chatContainer.scrollHeight;
+  chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to bottom
 }
 
+// Handle user message sending
 async function sendMessage(event) {
   event.preventDefault();
   const input = document.getElementById('userInput');
   const userText = input.value.trim();
   if (!userText) return;
 
-  messages.push({ sender: 'user', text: userText });
+  messages.push({ sender: 'user', text: userText }); // Push user message
   renderChat();
   input.value = '';
 
-  messages.push({ sender: 'bot', typing: true });
+  messages.push({ sender: 'bot', typing: true }); // Show typing animation
   renderChat();
 
   try {
+    // Send message to backend and await reply
     const res = await fetch('http://localhost:5000/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -131,8 +133,8 @@ async function sendMessage(event) {
     });
 
     const data = await res.json();
-    messages = messages.filter(msg => !msg.typing);
-    messages.push({ sender: 'bot', text: data.reply });
+    messages = messages.filter(msg => !msg.typing); // Remove typing
+    messages.push({ sender: 'bot', text: data.reply }); // Add bot reply
   } catch {
     messages = messages.filter(msg => !msg.typing);
     messages.push({ sender: 'bot', text: 'Sorry, something went wrong.' });
@@ -141,10 +143,12 @@ async function sendMessage(event) {
   renderChat();
 }
 
+// Toggle between dark and light mode
 function toggleMode() {
   document.body.classList.toggle('light-mode');
 }
 
+// Add breathing or journal tool responses
 function addTool(tool) {
   const journalPrompts = [
     "What is one thing you’re grateful for today, and why?",
@@ -162,6 +166,7 @@ function addTool(tool) {
     "Breathe in: 'I am calm'. Breathe out: 'I release tension.' Repeat 5 times."
   ];
 
+  // Select random prompt or exercise
   if (tool === 'breathing') {
     const randomBreathing = breathingExercises[Math.floor(Math.random() * breathingExercises.length)];
     messages.push({ sender: 'bot', text: randomBreathing });
@@ -169,9 +174,11 @@ function addTool(tool) {
     const randomPrompt = journalPrompts[Math.floor(Math.random() * journalPrompts.length)];
     messages.push({ sender: 'bot', text: randomPrompt });
   }
+
   renderChat();
 }
 
+// Auto-expand textarea height as user types
 function autoExpand(field) {
   field.style.height = 'inherit';
   const computed = window.getComputedStyle(field);
@@ -183,5 +190,5 @@ function autoExpand(field) {
   field.style.height = `${height}px`;
 }
 
-// Initialize with the form first
+// Initialize the app with intro form
 renderIntroForm();

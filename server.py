@@ -1,30 +1,33 @@
-import openai  # Import the OpenAI library to use the GPT chat models
-import os  # Import OS to access environment variables
-from dotenv import load_dotenv  # Load .env file containing API keys
-from flask import Flask, request, jsonify  # Flask modules to create endpoints and handle JSON
-from flask_cors import CORS  # Enables CORS for frontend-backend communication
-import uuid  # Used for generating anonymous session IDs
-import datetime  # Used to timestamp session messages
-import smtplib
+import openai  # OpenAI GPT chat models
+import os  # Access environment variables
+from dotenv import load_dotenv  # Load .env variables
+from flask import Flask, request, jsonify  # Flask web server and JSON response
+from flask_cors import CORS  # Cross-origin support for frontend
+import uuid  # Unique session IDs
+import datetime  # Timestamps
+import smtplib  # Sending emails
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-load_dotenv()  # Load environment variables from .env file
+# Load environment variables
+load_dotenv()
 
-app = Flask(__name__)  # Initialize the Flask app
-CORS(app)  # Enable CORS so the frontend can talk to the backend
+# Initialize app and enable CORS
+app = Flask(__name__)
+CORS(app)
 
-# Set API keys and credentials from environment variables
-openai.api_key = os.getenv('api')  # OpenAI API key
-FRONTEND_PASSWORD = os.getenv('FRONTEND_PASSWORD')  # Password to authenticate frontend
-guest_key = os.getenv('guest_key')  # Guest key placeholder for anonymous access
+# API keys from .env
+openai.api_key = os.getenv('api')
+FRONTEND_PASSWORD = os.getenv('FRONTEND_PASSWORD')
+guest_key = os.getenv('guest_key')
 
-# Define keywords that should trigger therapist escalation
+# Keywords that trigger escalation
 CRISIS_KEYWORDS = ["suicide", "kill myself", "hurt myself", "end it all", "overdose", "I'm done", "drugs"]
 
-# Temporary in-memory session storage (use a database for production)
+# In-memory session store
 sessions = {}
 
+# Email handler function
 def send_emails(name, age, user_email, reason):
     sender = os.getenv('EMAIL_USER')
     password = os.getenv('EMAIL_PASS')
@@ -35,12 +38,11 @@ def send_emails(name, age, user_email, reason):
         server.starttls()
         server.login(sender, password)
 
-        # Email to therapist
+        # Therapist email
         therapist_msg = MIMEMultipart()
         therapist_msg['From'] = sender
         therapist_msg['To'] = therapist_email
         therapist_msg['Subject'] = f"New EmotiCare Session from {name or 'Anonymous'}"
-
         therapist_body = f"""
         A user has started a new session:
 
@@ -52,7 +54,7 @@ def send_emails(name, age, user_email, reason):
         therapist_msg.attach(MIMEText(therapist_body, 'plain'))
         server.send_message(therapist_msg)
 
-        # Email to user
+        # User confirmation email
         if user_email:
             user_msg = MIMEMultipart()
             user_msg['From'] = sender
@@ -78,25 +80,24 @@ def send_emails(name, age, user_email, reason):
     except Exception as e:
         print(f"[ERROR] Failed to send emails: {e}")
 
-# Home route to verify server is up
+# Home route
 @app.route('/')
 def home():
-    return "EmotiCare Flask server is live!"  # Health check response
+    return "EmotiCare Flask server is live!"
 
-# Route to verify frontend credentials
+# Password validation
 @app.route('/validate-password', methods=['POST'])
 def validate_password():
-    data = request.get_json()  # Get the JSON payload from request
-    submitted_password = data.get('password')  # Extract submitted password
-    if submitted_password == FRONTEND_PASSWORD:
-        return jsonify({"success": True})  # Password matches
-    return jsonify({"success": False}), 403  # Unauthorized if password incorrect
+    data = request.get_json()
+    if data.get('password') == FRONTEND_PASSWORD:
+        return jsonify({"success": True})
+    return jsonify({"success": False}), 403
 
-# Route to collect user intro before chat starts
+# Start session
 @app.route('/start-session', methods=['POST'])
 def start_session():
-    data = request.get_json()  # Extract initial user data
-    session_id = str(uuid.uuid4())  # Create unique session ID
+    data = request.get_json()
+    session_id = str(uuid.uuid4())
     name = data.get("name", "Anonymous")
     age = data.get("age", "N/A")
     reason = data.get("reason", "Not specified")
@@ -116,21 +117,17 @@ def start_session():
 
     return jsonify({"session_id": session_id})
 
-# Main chat endpoint
+# Chat handler
 @app.route('/chat', methods=['POST'])
 def chat():
-    data = request.get_json()  # Parse request body
-    user_message = data.get("message")  # Extract user message
-    session_id = data.get("session_id", str(uuid.uuid4()))  # Generate session ID if not provided
-    language = data.get("language", "English")  # Optional language support
+    data = request.get_json()
+    user_message = data.get("message")
+    session_id = data.get("session_id", str(uuid.uuid4()))
 
-    # Reject empty messages
     if not user_message:
         return jsonify({"error": "Message is required"}), 400
 
-    # Check for crisis-related keywords
-    crisis_triggered = any(kw in user_message.lower() for kw in CRISIS_KEYWORDS)
-    if crisis_triggered:
+    if any(kw in user_message.lower() for kw in CRISIS_KEYWORDS):
         return jsonify({
             "reply": (
                 "I care about you. It sounds like you might be in crisis. "
@@ -141,18 +138,16 @@ def chat():
         })
 
     try:
-        # Fetch intro info if available
-        intro_info = sessions.get(session_id, [{}])[0].get("intro", {})
+        intro = sessions.get(session_id, [{}])[0].get("intro", {})
         system_prompt = (
             f"You are EmotiCare, an empathetic mental health assistant.\n"
-            f"User Name: {intro_info.get('name', 'Anonymous')}\n"
-            f"User Age: {intro_info.get('age', 'N/A')}\n"
-            f"User Reason for Chat: {intro_info.get('reason', 'Not specified')}\n\n"
+            f"User Name: {intro.get('name', 'Anonymous')}\n"
+            f"User Age: {intro.get('age', 'N/A')}\n"
+            f"User Reason for Chat: {intro.get('reason', 'Not specified')}\n\n"
             "Provide emotional support, validate feelings, and help users gently. "
             "If the user is struggling, you may offer breathing exercises, journaling, or positive reframing."
         )
 
-        # Send message to GPT model
         response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
@@ -163,7 +158,6 @@ def chat():
 
         bot_reply = response["choices"][0]["message"]["content"]
 
-        # Append message to session
         now = datetime.datetime.utcnow()
         if session_id not in sessions:
             sessions[session_id] = []
@@ -174,7 +168,7 @@ def chat():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Route to retrieve previous session by session_id
+# Get session history
 @app.route('/get-session/<session_id>', methods=['GET'])
 def get_session(session_id):
     session_data = sessions.get(session_id)
@@ -182,7 +176,7 @@ def get_session(session_id):
         return jsonify({"error": "Session not found"}), 404
     return jsonify(session_data)
 
-# Route to simulate saving session to a file or storage
+# Mock save session
 @app.route('/save-session', methods=['POST'])
 def save_session():
     data = request.get_json()
@@ -190,29 +184,29 @@ def save_session():
     export = data.get("export")
     return jsonify({"message": f"Session {session_id} saved (mock response).", "export": export})
 
-# Endpoint to notify therapist if user is in crisis
+# Crisis alert to therapist
 @app.route('/alert-therapist', methods=['POST'])
 def alert_therapist():
     data = request.get_json()
     session_id = data.get("session_id")
-    latest_message = data.get("message")
+    message = data.get("message")
     print(f"[ALERT] Therapist notified: Session {session_id} flagged for review.")
     return jsonify({"alert": "Therapist notified successfully."})
 
-# Endpoint to allow therapist to send a message to a session
+# Therapist manual reply
 @app.route('/therapist-reply', methods=['POST'])
 def therapist_reply():
     data = request.get_json()
     session_id = data.get("session_id")
-    reply_message = data.get("reply")
+    reply = data.get("reply")
 
     if session_id not in sessions:
         return jsonify({"error": "Session not found"}), 404
 
     now = datetime.datetime.utcnow()
-    sessions[session_id].append({"timestamp": now.isoformat(), "therapist": reply_message})
+    sessions[session_id].append({"timestamp": now.isoformat(), "therapist": reply})
     return jsonify({"message": "Therapist message stored."})
 
-# Start the Flask app
+# Start server
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
