@@ -1,78 +1,109 @@
-# 📦 Import required libraries
-import openai                   # For interacting with the OpenAI API
-import os                       # To work with environment variables like your API key
-from dotenv import load_dotenv # To load environment variables from a .env file
-from flask import Flask, request, jsonify  # Flask for the web server initialization
-from flask_cors import CORS    # CORS to allow frontend apps to connect to this backend
+import openai  # OpenAI's API for chat completion
+import os  # For accessing environment variables
+from dotenv import load_dotenv  # Loads .env file containing API keys and secrets
+from flask import Flask, request, jsonify  # Flask for creating the web server and API endpoints
+from flask_cors import CORS  # Enables CORS so frontend can talk to backend
+import uuid  # For generating unique session IDs
+import datetime  # For handling timestamps in session logs
 
-#  Load environment variables from the .env file (API key, frontend password, etc.)
-load_dotenv() 
- 
-#  Initialize the Flask app
-app = Flask(__name__)
+load_dotenv()  # Load environment variables from .env
 
-#  Enable Cross-Origin Resource Sharing (CORS) so your frontend can call this API from a different domain
-CORS(app) 
+app = Flask(__name__)  # Initialize Flask app
+CORS(app)  # Enable CORS so frontend can communicate without restrictions
 
-#  Get the OpenAI API key and frontend password from environment variables
-openai.api_key = os.getenv('api')
-FRONTEND_PASSWORD = os.getenv('FRONTEND_PASSWORD')
-guest_key = os.getenv('guest_key')
+openai.api_key = os.getenv('api')  # Set OpenAI API key from environment
+FRONTEND_PASSWORD = os.getenv('FRONTEND_PASSWORD')  # Auth password for frontend access
+guest_key = os.getenv('guest_key')  # Placeholder for guest login key
 
-#  Route: Root endpoint to confirm server is running
-@app.route('/')
+# Crisis detection keywords that trigger escalation
+CRISIS_KEYWORDS = ["suicide", "kill myself", "hurt myself", "end it all", "overdose", "I'm done"]
+
+# Dictionary to store chat sessions temporarily
+sessions = {}
+
+@app.route('/')  # Route for home endpoint
+
 def home():
-    return "Flask server with AI Chatbot is running!"  # Simple response for testing
+    return "EmotiCare Flask server is live!"  # Simple message to show server is running
 
-#  Route: Validate frontend password to make sure only approved users can access
-@app.route('/validate-password', methods=['POST'])
+@app.route('/validate-password', methods=['POST'])  # Route to validate frontend password
+
 def validate_password():
-    data = request.get_json()  # Get JSON payload from frontend
+    data = request.get_json()  # Parse JSON payload from frontend
     submitted_password = data.get('password')  # Extract submitted password
-    if submitted_password == FRONTEND_PASSWORD:  # Compare with the correct one
-        return jsonify({"success": True})        # Password is correct
-    else:
-        return jsonify({"success": False}), 403  # Wrong password, return error
+    if submitted_password == FRONTEND_PASSWORD:  # Check if password matches
+        return jsonify({"success": True})  # Return success response
+    return jsonify({"success": False}), 403  # Return error if password is incorrect
 
-#  Route: Handle chat requests from the frontend
-@app.route('/chat', methods=['POST'])
+@app.route('/chat', methods=['POST'])  # Route to handle chat messages
+
 def chat():
-    data = request.get_json()             # Get JSON payload from frontend
-    user_message = data.get("message")    # Extract the message sent by the user
+    data = request.get_json()  # Parse incoming JSON data
+    user_message = data.get("message")  # Extract user's message
+    session_id = data.get("session_id", str(uuid.uuid4()))  # Use provided session_id or create a new one
+    language = data.get("language", "English")  # Optional language support (default: English)
 
-    #  Error handling: If there's no message in the request
     if not user_message:
-        return jsonify({"error": "Message is required"}), 400
+        return jsonify({"error": "Message is required"}), 400  # Return error if no message was sent
+
+    # Check for crisis keywords in the message
+    crisis_triggered = any(kw in user_message.lower() for kw in CRISIS_KEYWORDS)
+    if crisis_triggered:
+        return jsonify({
+            "reply": (
+                "I care about you. It sounds like you might be in crisis. "
+                "Please consider calling 988 or contacting a licensed therapist. "
+                "Would you like me to help connect you with someone now?"
+            ),
+            "escalate": True  # Flag to notify frontend of serious message
+        })
 
     try:
-        #  Call OpenAI's ChatCompletion API with GPT-4o model
+        # Call OpenAI API to generate response
         response = openai.ChatCompletion.create(
-            model="gpt-4o",  # GPT-4o (Omni model)
-           messages=[
-    {
-        "role": "system",
-        "content": (
-            "You are a supportive, emotionally intelligent mental health assistant. "
-            "Be empathetic, validating, and caring. Help the user feel heard and valued. "
-            "If they are sad, comfort them. If they are anxious, offer calm advice. "
-            "You may gently suggest breathing exercises or journaling if it helps."
-        )
-    },
-    {"role": "user", "content": user_message}
-]
-
+            model="gpt-4o",  # Use GPT-4o (Omni) model
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are EmotiCare, an empathetic mental health assistant. "
+                        "Provide emotional support, validate feelings, and help users gently. "
+                        "If the user is struggling, you may offer breathing exercises, journaling, or positive reframing."
+                    )
+                },
+                {"role": "user", "content": user_message}  # User input
+            ]
         )
 
-        #  Extract AI's reply from the response
-        bot_reply = response["choices"][0]["message"]["content"]
+        bot_reply = response["choices"][0]["message"]["content"]  # Extract chatbot reply
 
-        #  Send AI's reply back to the frontend
-        return jsonify({"reply": bot_reply})
+        # Track session messages with timestamp
+        now = datetime.datetime.utcnow()
+        if session_id not in sessions:
+            sessions[session_id] = []  # Create session if not already present
+        sessions[session_id].append({"timestamp": now.isoformat(), "user": user_message, "bot": bot_reply})
+
+        return jsonify({"reply": bot_reply, "session_id": session_id})  # Return reply and session ID
 
     except Exception as e:
-        #  If something goes wrong (like API error), return the error message
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 500  # Return error if something goes wrong
 
-#  Start the Flask server when this script is run directly
+@app.route('/get-session/<session_id>', methods=['GET'])  # Route to get session history
+
+def get_session(session_id):
+    session_data = sessions.get(session_id)  # Retrieve session logs
+    if not session_data:
+        return jsonify({"error": "Session not found"}), 404  # Return error if not found
+    return jsonify(session_data)  # Return session data
+
+@app.route('/save-session', methods=['POST'])  # Route to mock-save session
+
+def save_session():
+    data = request.get_json()  # Parse request body
+    session_id = data.get("session_id")  # Get session ID to save
+    export = data.get("export")  # Optional: Encrypted export data
+    # You can encrypt and store this securely in production
+    return jsonify({"message": f"Session {session_id} saved (mock response).", "export": export})
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)  # Run on port 5000, open to all network interfaces
+    app.run(debug=True, host='0.0.0.0', port=5000)  # Start Flask server on all interfaces at port 5000

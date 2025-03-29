@@ -94,3 +94,34 @@ const app = document.getElementById('app');
       
       renderMoodSelector();
 
+      // 💬 Updated input field for more modern style
+      function renderChat() {
+        app.innerHTML = `
+          <div class="chat-container" id="chat-container">
+            ${messages.map(msg => `<div class="message ${msg.sender}" style="white-space: pre-wrap; line-height: 1.5;">${msg.text}</div>`).join('')}
+          </div>
+          <div class="tools">
+            <button onclick="addTool('breathing')">🧘 Breathe</button>
+            <button onclick="addTool('journal')">📝 Journal</button>
+          </div>
+          <form class="input-area" onsubmit="sendMessage(event)">
+            <textarea id="userInput" class="input-modern" placeholder="Type something you're feeling..." autocomplete="off" rows="1" oninput="autoExpand(this)"></textarea>
+            <button type="submit">Send</button>
+          </form>
+        `;
+        const chatContainer = document.getElementById('chat-container');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+      
+      function autoExpand(field) {
+        field.style.height = 'inherit';
+        const computed = window.getComputedStyle(field);
+        const height = parseInt(computed.getPropertyValue('border-top-width'), 10)
+                     + parseInt(computed.getPropertyValue('padding-top'), 10)
+                     + field.scrollHeight
+                     + parseInt(computed.getPropertyValue('padding-bottom'), 10)
+                     + parseInt(computed.getPropertyValue('border-bottom-width'), 10);
+        field.style.height = `${height}px`;
+      }
+      
+

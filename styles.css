@@ -68,7 +68,30 @@
     background: #374151;
     color: white;
     font-size: 1rem;
+    outline: none;
   }
+
+  textarea.input-modern {
+    resize: none;
+    overflow: hidden;
+    width: 100%;
+    font-size: 1rem;
+    padding: 0.6rem;
+    border-radius: 8px 0 0 8px;
+    border: none;
+    background: #374151;
+    color: white;
+    line-height: 1.4;
+    font-family: 'Segoe UI', sans-serif;
+    outline: none;
+  }
+
+  
+  body.light-mode textarea.input-modern {
+    background: #e2e8f0;
+    color: #1e293b;
+  }
+  
   body.light-mode input {
     background: #cbd5e1;
     color: #1e293b;
@@ -156,4 +179,18 @@
     .message {
       font-size: 0.95rem;
     }
+
+    button .mode-toggle {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: #64748b;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+
   }
