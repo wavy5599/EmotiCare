@@ -33,5 +33,5 @@ EmotiCare is a compassionate web-based chatbot built to support users emotionall
 ### 1. Clone this Repo
 
 ```bash
-git clone https://github.com/Narany1/DSU-Hackathon.git
-cd DSU-Hackathon
+git clone git@github.com:wavy5599/EmotiCare.git
+cd EmotiCare
