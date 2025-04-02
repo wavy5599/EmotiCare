@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - EmotiCare</title>
+  <link rel="stylesheet" href="/main.css" />
+</head>
+<body>
+  <div class="section login-section">
+    <div class="logo-container">
+      <img src="/assets/logo.png" alt="EmotiCare Logo" class="logo" />
+    </div>
+    <h2 style="text-align: center;">Log in to EmotiCare</h2>
+    <form class="login-form" onsubmit="handleLogin(event)">
+      <input type="email" placeholder="Email" required />
+      <input type="password" placeholder="Password" required />
+      <button type="submit">Log In</button>
+      <p style="text-align: center; margin-top: 1rem;">
+        Don’t have an account? <a href="/register.html">Sign Up</a>
+      </p>
+    </form>
+  </div>
+
+    <script>
+  async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.querySelector('input[type="email"]').value;
+    const password = document.querySelector('input[type="password"]').value;
+
+    const res = await fetch("http://localhost:5000/login", {
+      method: "POST",
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      alert(`Welcome back, ${data.name}!`);
+      window.location.href = "/Chat/chat.html";
+    } else {
+      alert(data.message || "Login failed.");
+    }
+  }
+</script>
+
+  </script>
+</body>
+</html>
