@@ -12,6 +12,10 @@ let messages = []; // Store chat messages
 let mood = null; // Store user mood
 let sessionId = null; // Store session ID from backend
 
+
+
+
+
 // Render the initial form for user input
 function renderIntroForm() {
   app.innerHTML = `

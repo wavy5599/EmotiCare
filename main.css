@@ -1,0 +1,188 @@
+:root {
+  --gradient: linear-gradient(135deg, #141e30, #243b55);
+  --section-glass: rgba(255, 255, 255, 0.05);
+  --card-glass: rgba(255, 255, 255, 0.08);
+  --text-light: #f1f5f9;
+  --text-subtle: #cbd5e1;
+  --primary: #4f46e5;
+  --primary-hover: #6366f1;
+  --blur: 25px;
+  --radius: 18px;
+  --transition: 0.3s ease;
+}
+
+/* Reset & Base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--gradient);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  color: var(--text-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  padding: 2rem 1rem;
+}
+
+/* Section Wrapper */
+.section {
+  max-width: 1100px;
+  width: 100%;
+  background: var(--section-glass);
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  margin: 2rem auto;
+  backdrop-filter: blur(var(--blur));
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 0.6s ease;
+}
+
+/* Hero Section */
+.hero-section {
+  text-align: center;
+}
+
+.hero-section .logo {
+  width: 120px;
+  margin-bottom: 1rem;
+  border-radius: 14px;
+}
+
+.hero-section h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.hero-section p {
+  font-size: 1.1rem;
+  color: var(--text-subtle);
+}
+
+.cta-buttons {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+button {
+  background: var(--primary);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+button:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+/* Grids & Layout */
+.grid, .pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.two-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .two-column {
+    flex-direction: row;
+  }
+}
+
+/* Cards */
+.card, .pricing-card {
+  background: var(--card-glass);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: var(--transition);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.card:hover, .pricing-card:hover {
+  transform: scale(1.03);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pricing-card h3 {
+  margin-bottom: 0.75rem;
+  color: var(--primary-hover);
+}
+
+/* Text */
+h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #e0e8ff;
+}
+
+p {
+  color: var(--text-subtle);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.feature-list {
+  list-style: none;
+  margin-top: 1rem;
+  padding-left: 0;
+}
+
+.feature-list li {
+  margin-bottom: 0.5rem;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Responsive Scaling */
+@media (max-width: 600px) {
+  .hero-section h1 {
+    font-size: 1.8rem;
+  }
+
+  .hero-section p {
+    font-size: 1rem;
+  }
+
+  button {
+    font-size: 0.95rem;
+  }
+
+  .section {
+    padding: 2rem 1rem;
+  }
+}
