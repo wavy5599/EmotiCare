@@ -1,17 +1,12 @@
 :root {
-  --gradient: linear-gradient(135deg, #141e30, #243b55);
-  --section-glass: rgba(255, 255, 255, 0.05);
-  --card-glass: rgba(255, 255, 255, 0.08);
-  --text-light: #f1f5f9;
-  --text-subtle: #cbd5e1;
-  --primary: #4f46e5;
-  --primary-hover: #6366f1;
-  --blur: 25px;
-  --radius: 18px;
-  --transition: 0.3s ease;
+  --bg-gradient-dark: linear-gradient(135deg, #0f2027, #435ac8, #2c5364);
+  --bg-gradient-light: linear-gradient(135deg, #c9d6ff, #e2e2e2);
+  --text-dark: #f1f5f9;
+  --text-light: #1e293b;
+  --button-bg: #2563eb;
+  --button-hover: #1d4ed8;
 }
 
-/* Reset & Base */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -19,53 +14,74 @@
 }
 
 html, body {
-  height: 100%;
   font-family: 'Segoe UI', sans-serif;
-  background: var(--gradient);
+  background: var(--bg-gradient-dark);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
-  color: var(--text-light);
+  color: var(--text-dark);
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  overflow-x: hidden;
   padding: 2rem 1rem;
 }
 
-/* Section Wrapper */
+body.light-mode {
+  background: var(--bg-gradient-light);
+  color: var(--text-light);
+}
+
+
+.app {
+  margin-bottom: 10px;
+}
+
+/* ======================
+   Section Styling
+====================== */
 .section {
   max-width: 1100px;
   width: 100%;
-  background: var(--section-glass);
-  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 20px;
   padding: 3rem 2rem;
   margin: 2rem auto;
-  backdrop-filter: blur(var(--blur));
+  backdrop-filter: blur(15px);
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
   animation: fadeIn 0.6s ease;
 }
 
-/* Hero Section */
+/* Add breathing space after last section */
+.plans-section {
+  margin-bottom: 6rem;
+}
+
+/* ======================
+   Hero Section
+====================== */
 .hero-section {
   text-align: center;
 }
 
-.hero-section .logo {
-  width: 120px;
+.logo {
+  width: 140px;
   margin-bottom: 1rem;
-  border-radius: 14px;
+  border-radius: 20px;
 }
 
 .hero-section h1 {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
+  color: #c9d6ff;
 }
 
 .hero-section p {
   font-size: 1.1rem;
-  color: var(--text-subtle);
+  color: #cbd5e1;
 }
 
+/* ======================
+   CTA Buttons
+====================== */
 .cta-buttons {
   margin-top: 1.5rem;
   display: flex;
@@ -74,25 +90,27 @@ html, body {
   flex-wrap: wrap;
 }
 
-/* Buttons */
 button {
-  background: var(--primary);
+  background: var(--button-bg);
   color: white;
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
+  border-radius: 10px;
   font-size: 1rem;
-  transition: var(--transition);
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
 
 button:hover {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
+  background-color: var(--button-hover);
+  transform: scale(1.05);
 }
 
-/* Grids & Layout */
-.grid, .pricing-grid {
+/* ======================
+   Layouts: Grid & Columns
+====================== */
+.grid,
+.pricing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.5rem;
@@ -112,28 +130,62 @@ button:hover {
   }
 }
 
-/* Cards */
-.card, .pricing-card {
-  background: var(--card-glass);
-  border-radius: var(--radius);
+/* ======================
+   Cards & Pricing Boxes
+====================== */
+
+.pricing-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   padding: 1.5rem;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.07);
-  transition: var(--transition);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+  margin-bottom: 10px; /* ✅ THIS LINE IS WHAT YOU NEEDED */
 }
 
-.card:hover, .pricing-card:hover {
+
+
+.card,
+.pricing-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.card:hover,
+.pricing-card:hover {
   transform: scale(1.03);
   background: rgba(255, 255, 255, 0.1);
 }
 
 .pricing-card h3 {
   margin-bottom: 0.75rem;
-  color: var(--primary-hover);
+  color: #93c5fd;
 }
 
-/* Text */
+/* ======================
+   Feature Lists
+====================== */
+.feature-list {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 1rem;
+}
+
+.feature-list li {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+/* ======================
+   Typography
+====================== */
 h2 {
   font-size: 1.8rem;
   margin-bottom: 1rem;
@@ -141,34 +193,28 @@ h2 {
 }
 
 p {
-  color: var(--text-subtle);
+  color: #cbd5e1;
   font-size: 1rem;
   line-height: 1.7;
 }
 
-.feature-list {
-  list-style: none;
-  margin-top: 1rem;
-  padding-left: 0;
-}
-
-.feature-list li {
-  margin-bottom: 0.5rem;
-}
-
-/* Animation */
+/* ======================
+   Animations
+====================== */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-/* Responsive Scaling */
+/* ======================
+   Mobile Tweaks
+====================== */
 @media (max-width: 600px) {
   .hero-section h1 {
     font-size: 1.8rem;
