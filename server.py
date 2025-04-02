@@ -1,33 +1,102 @@
-import openai  # OpenAI GPT chat models
-import os  # Access environment variables
-from dotenv import load_dotenv  # Load .env variables
-from flask import Flask, request, jsonify  # Flask web server and JSON response
-from flask_cors import CORS  # Cross-origin support for frontend
-import uuid  # Unique session IDs
-import datetime  # Timestamps
-import smtplib  # Sending emails
+import openai
+import os
+import uuid
+import json
+import datetime
+import smtplib
+from flask import Flask, request, jsonify, session
+from flask_cors import CORS
+from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Load environment variables
 load_dotenv()
 
-# Initialize app and enable CORS
+# Flask setup
 app = Flask(__name__)
 CORS(app)
+app.secret_key = os.getenv('SESSION_SECRET') or 'supersecretkey'
 
-# API keys from .env
+# OpenAI key
 openai.api_key = os.getenv('api')
 FRONTEND_PASSWORD = os.getenv('FRONTEND_PASSWORD')
 guest_key = os.getenv('guest_key')
 
-# Keywords that trigger escalation
+# Constants
 CRISIS_KEYWORDS = ["suicide", "kill myself", "hurt myself", "end it all", "overdose", "I'm done", "drugs"]
-
-# In-memory session store
+USER_FILE = 'users.json'
 sessions = {}
 
-# Email handler function
+# === UTILITIES ===
+def load_users():
+    if not os.path.exists(USER_FILE):
+        return {}
+    with open(USER_FILE, 'r') as f:
+        return json.load(f)
+
+def save_users(users):
+    with open(USER_FILE, 'w') as f:
+        json.dump(users, f, indent=2)
+
+# === AUTH ROUTES ===
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    name = data.get('name')
+
+    if not email or not password or not name:
+        return jsonify({"success": False, "message": "All fields are required"}), 400
+
+    users = load_users()
+    if email in users:
+        return jsonify({"success": False, "message": "Email already registered"}), 409
+
+    users[email] = {
+        "name": name,
+        "password": generate_password_hash(password),
+        "mood_history": [],
+        "journal_entries": [],
+        "settings": {
+            "theme": "dark",
+            "notifications": True
+        }
+    }
+    save_users(users)
+    return jsonify({"success": True, "message": "Account created successfully."})
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    users = load_users()
+    user = users.get(email)
+
+    if user and check_password_hash(user['password'], password):
+        session['user'] = email
+        return jsonify({"success": True, "message": "Login successful!", "name": user['name']})
+    else:
+        return jsonify({"success": False, "message": "Invalid email or password"}), 401
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.pop('user', None)
+    return jsonify({"success": True, "message": "Logged out successfully."})
+
+@app.route('/user-data', methods=['GET'])
+def user_data():
+    if 'user' not in session:
+        return jsonify({"error": "Not logged in"}), 403
+
+    users = load_users()
+    return jsonify(users.get(session['user'], {}))
+
+# === EMAIL HANDLER ===
 def send_emails(name, age, user_email, reason):
     sender = os.getenv('EMAIL_USER')
     password = os.getenv('EMAIL_PASS')
@@ -43,7 +112,7 @@ def send_emails(name, age, user_email, reason):
         therapist_msg['From'] = sender
         therapist_msg['To'] = therapist_email
         therapist_msg['Subject'] = f"New EmotiCare Session from {name or 'Anonymous'}"
-        therapist_body = f"""
+        body = f"""
         A user has started a new session:
 
         Name: {name or 'Anonymous'}
@@ -51,7 +120,7 @@ def send_emails(name, age, user_email, reason):
         Email: {user_email or 'Not provided'}
         Reason for Reaching Out: {reason}
         """
-        therapist_msg.attach(MIMEText(therapist_body, 'plain'))
+        therapist_msg.attach(MIMEText(body, 'plain'))
         server.send_message(therapist_msg)
 
         # User confirmation email
@@ -60,7 +129,6 @@ def send_emails(name, age, user_email, reason):
             user_msg['From'] = sender
             user_msg['To'] = user_email
             user_msg['Subject'] = "Welcome to EmotiCare 💙"
-
             user_body = f"""
             Hi {name or 'there'},
 
@@ -80,12 +148,11 @@ def send_emails(name, age, user_email, reason):
     except Exception as e:
         print(f"[ERROR] Failed to send emails: {e}")
 
-# Home route
+# === APP ROUTES ===
 @app.route('/')
 def home():
     return "EmotiCare Flask server is live!"
 
-# Password validation
 @app.route('/validate-password', methods=['POST'])
 def validate_password():
     data = request.get_json()
@@ -93,7 +160,6 @@ def validate_password():
         return jsonify({"success": True})
     return jsonify({"success": False}), 403
 
-# Start session
 @app.route('/start-session', methods=['POST'])
 def start_session():
     data = request.get_json()
@@ -114,10 +180,8 @@ def start_session():
     }]
 
     send_emails(name, age, email, reason)
-
     return jsonify({"session_id": session_id})
 
-# Chat handler
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
@@ -157,18 +221,22 @@ def chat():
         )
 
         bot_reply = response["choices"][0]["message"]["content"]
-
         now = datetime.datetime.utcnow()
+
         if session_id not in sessions:
             sessions[session_id] = []
-        sessions[session_id].append({"timestamp": now.isoformat(), "user": user_message, "bot": bot_reply})
+
+        sessions[session_id].append({
+            "timestamp": now.isoformat(),
+            "user": user_message,
+            "bot": bot_reply
+        })
 
         return jsonify({"reply": bot_reply, "session_id": session_id})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Get session history
 @app.route('/get-session/<session_id>', methods=['GET'])
 def get_session(session_id):
     session_data = sessions.get(session_id)
@@ -176,7 +244,6 @@ def get_session(session_id):
         return jsonify({"error": "Session not found"}), 404
     return jsonify(session_data)
 
-# Mock save session
 @app.route('/save-session', methods=['POST'])
 def save_session():
     data = request.get_json()
@@ -184,7 +251,6 @@ def save_session():
     export = data.get("export")
     return jsonify({"message": f"Session {session_id} saved (mock response).", "export": export})
 
-# Crisis alert to therapist
 @app.route('/alert-therapist', methods=['POST'])
 def alert_therapist():
     data = request.get_json()
@@ -193,7 +259,6 @@ def alert_therapist():
     print(f"[ALERT] Therapist notified: Session {session_id} flagged for review.")
     return jsonify({"alert": "Therapist notified successfully."})
 
-# Therapist manual reply
 @app.route('/therapist-reply', methods=['POST'])
 def therapist_reply():
     data = request.get_json()
@@ -207,6 +272,6 @@ def therapist_reply():
     sessions[session_id].append({"timestamp": now.isoformat(), "therapist": reply})
     return jsonify({"message": "Therapist message stored."})
 
-# Start server
+# === RUN ===
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

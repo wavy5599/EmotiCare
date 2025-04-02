@@ -1,21 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EmotiCare</title>
-<link rel="stylesheet"
-   href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=light_mode" />
-<link rel="stylesheet" href="/styles.css">
-<link rel="icon" href="/assets/logo.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to EmotiCare</title>
+  <link rel="stylesheet" href="/main.css" />
+  <link rel="icon" href="/assets/logo.png" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+</head>
 <body>
   <div id="app"></div>
-  <button class="mode-toggle" onclick="toggleMode()"><span class="material-symbols-outlined">
-    light_mode
-    </span></button>
-<script src="/logic.js"></script>
+
+  <script>
+    const app = document.getElementById("app");
+
+    function renderHomePage() {
+      app.innerHTML = `
+        <div class="app">
+          <div class="user-menu">
+  <span class="material-icons user-icon" onclick="toggleUserMenu()">account_circle</span>
+  <div id="userDropdown" class="dropdown-content">
+    <a href="/Log-In/login.html">🔐 Log In</a>
+    <a href="/register.html">🆕 Sign Up</a>
+  </div>
+</div>
+
+          <div class="section hero-section">
+            <img class="logo" src="/assets/logo.png" alt="EmotiCare Logo" />
+            <h1>Welcome to EmotiCare</h1>
+            <p>Your AI-powered emotional wellness companion.</p>
+            <div class="cta-buttons">
+              <a href="/Chat/chat.html"><button>🌱 Start Chat</button></a>
+              <a href="/Log-In/login.html"><button>🔐 Log In / Create Account</button></a>
+            </div>
+          </div>
+
+          <div class="section why-section">
+            <h2>Why EmotiCare?</h2>
+            <div class="grid">
+              <div class="card">✅ 24/7 Support with AI + Tools</div>
+              <div class="card">💬 Anonymous Chat Option</div>
+              <div class="card">🧘 Built-in Journaling & Breathing</div>
+              <div class="card">📬 Therapist Message Alerts</div>
+            </div>
+          </div>
+
+          <div class="section story-section">
+            <h2>Our Story</h2>
+            <div class="two-column">
+              <p>EmotiCare started as a student-led passion project — built for those struggling in silence. We've been there. Now, we're helping others break the silence with AI and empathy.</p>
+              <p>Our team blends mental wellness, tech, and real-world heart to create something that *feels human*. We’re growing, listening, and here to stay.</p>
+            </div>
+          </div>
+
+          <div class="section support-section">
+            <h2>Need Help?</h2>
+            <div class="card contact-card">
+              <p>📧 Email us at <a href="mailto:support@emoticare.ai">support@emoticare.ai</a></p>
+              <p>⏱️ Replies in 24–48 hours</p>
+              <p>🛟 We're here for you.</p>
+            </div>
+          </div>
+
+          <div class="section plans-section">
+            <h2>Plans & Support</h2>
+            <div class="pricing-grid">
+              <div class="pricing-card">
+                <h3>🌱 Free</h3>
+                <p>• Journaling</p>
+                <p>• Chat access</p>
+                <p>• Mood tracking</p>
+              </div>
+              <div class="pricing-card">
+                <h3>💙 Supporter ($5/mo)</h3>
+                <p>• All Free features</p>
+                <p>• Priority response</p>
+                <p>• Therapist summaries</p>
+              </div>
+              <div class="pricing-card">
+                <h3>🌟 Premium ($10/mo)</h3>
+                <p>• Everything in Supporter</p>
+                <p>• Mood history</p>
+                <p>• Early access tools</p>
+              </div>
+            </div>
+          </div>
+
+          <footer class="footer">
+            <p>© 2025 EmotiCare. All rights reserved.</p>
+          </footer>
+        </div>
+      `;
+    }
+
+    renderHomePage();
+
+    function toggleUserMenu() {
+    const dropdown = document.getElementById("userDropdown");
+    dropdown.classList.toggle("show");
+  }
+
+  window.addEventListener("click", function(event) {
+    if (!event.target.matches(".user-icon")) {
+      const dropdowns = document.getElementsByClassName("dropdown-content");
+      for (let i = 0; i < dropdowns.length; i++) {
+        dropdowns[i].classList.remove("show");
+      }
+    }
+  });
+
+
+
+  </script>
 </body>
 </html>
