@@ -17,6 +17,14 @@
     function renderHomePage() {
       app.innerHTML = `
         <div class="app">
+          <div class="user-menu">
+  <span class="material-icons user-icon" onclick="toggleUserMenu()">account_circle</span>
+  <div id="userDropdown" class="dropdown-content">
+    <a href="/Log-In/login.html">🔐 Log In</a>
+    <a href="/register.html">🆕 Sign Up</a>
+  </div>
+</div>
+
           <div class="section hero-section">
             <img class="logo" src="/assets/logo.png" alt="EmotiCare Logo" />
             <h1>Welcome to EmotiCare</h1>
@@ -86,6 +94,23 @@
     }
 
     renderHomePage();
+
+    function toggleUserMenu() {
+    const dropdown = document.getElementById("userDropdown");
+    dropdown.classList.toggle("show");
+  }
+
+  window.addEventListener("click", function(event) {
+    if (!event.target.matches(".user-icon")) {
+      const dropdowns = document.getElementsByClassName("dropdown-content");
+      for (let i = 0; i < dropdowns.length; i++) {
+        dropdowns[i].classList.remove("show");
+      }
+    }
+  });
+
+
+
   </script>
 </body>
 </html>
