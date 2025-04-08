@@ -1,0 +1,103 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmotiCare CRM</title>
+  <link rel="stylesheet" href="/Chat/styles.css">
+  <link rel="stylesheet"
+   href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=light_mode" />
+  
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>EmotiCare CRM Dashboard</h1>
+
+    <section>
+      <h2>Leads & Sessions</h2>
+      <table id="sessionsTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Age</th>
+            <th>Mood</th>
+            <th>Session ID</th>
+            <th>Started At</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Follow-Ups</h2>
+      <table id="followupsTable">
+        <thead>
+          <tr>
+            <th>Session ID</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Notes</th>
+            <th>Update</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    async function loadSessions() {
+      const res = await fetch('/get-sessions');
+      const data = await res.json();
+      const tbody = document.querySelector('#sessionsTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(row => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${row.name}</td>
+            <td>${row.email}</td>
+            <td>${row.age}</td>
+            <td>${row.mood}</td>
+            <td>${row.session_id}</td>
+            <td>${new Date(row.started_at).toLocaleString()}</td>
+          </tr>`;
+      });
+    }
+
+    async function loadFollowups() {
+      const res = await fetch('/get-followups');
+      const data = await res.json();
+      const tbody = document.querySelector('#followupsTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(row => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${row.session_id}</td>
+            <td>${row.followup_date}</td>
+            <td>${row.followup_status}</td>
+            <td>${row.notes}</td>
+            <td>
+              <button onclick="updateStatus(${row.id}, 'done')">Mark Done</button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    async function updateStatus(id, status) {
+      await fetch('/update-followup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ followup_id: id, status })
+      });
+      loadFollowups();
+    }
+
+    loadSessions();
+    loadFollowups();
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+    "demo@example.com": {
+      "name": "User",
+      "password": "$2b$12$hashedStuffHere",
+      "mood_history": [],
+      "journal_entries": [],
+      "settings": {
+        "theme": "dark",
+        "notifications": true
+      }
+    }
+  }
+  

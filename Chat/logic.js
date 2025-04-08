@@ -12,11 +12,15 @@ let messages = []; // Store chat messages
 let mood = null; // Store user mood
 let sessionId = null; // Store session ID from backend
 
+
+
+
+
 // Render the initial form for user input
 function renderIntroForm() {
   app.innerHTML = `
   <div class="intro-wrapper">
-    <img class="logo" src="/assets/logo.png" alt="EmotiCare Logo" />
+   <a href = "/index.html" >  <img class="logo" src="/assets/logo.png" alt="EmotiCare Logo" /> <a/>
     <div class="intro-form">
       <h2 class="intro-heading">Before we begin...</h2>
       <form onsubmit="startSession(event)">
@@ -27,7 +31,7 @@ function renderIntroForm() {
         <button type="submit">Continue</button>
         <p class="terms-text">
           By continuing, you agree to our
-          <a href="/terms-service.html" target="_blank">Terms of Service</a>.
+          <a href="terms-service.html" target="_blank">Terms of Service</a>.
         </p>
       </form>
     </div>
